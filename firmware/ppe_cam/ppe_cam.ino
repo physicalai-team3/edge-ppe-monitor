@@ -8,16 +8,45 @@
 static trigger_t s_trigger;
 static bool s_link_error = false;  // true 면 1초 주기 깜빡임 (Wi-Fi 끊김 / 마지막 전송 최종 실패)
 
-static void led_signal(const upload_reply_t& reply) {
-  // TODO: docs/03-contracts.md §3.5 (active-low, 최대 600ms 안에 끝내기)
-  //   UP_OK + RES_VIOLATION → 100ms 켜짐/꺼짐 3번
-  //   UP_OK + 그 외         → 100ms 1번, s_link_error = false
-  //   실패                  → s_link_error = true
-  (void)reply;
+static uint32_t s_led_toggle_ms = 0;
+static bool s_led_on = false;
+
+static void led_set(bool on) {
+  s_led_on = on;
+  digitalWrite(PPE_LED_PIN, on ? LOW : HIGH);  // active-low
 }
 
+static void led_blink(int times) {
+  for (int i = 0; i < times; i++) {
+    led_set(true);
+    delay(100);
+    led_set(false);
+    if (i < times - 1) delay(100);
+  }
+}
+
+// docs/03-contracts.md §3.5 — 최대 600ms 안에 끝난다 (3번 = 100ms × 5 + 꺼짐)
+static void led_signal(const upload_reply_t& reply) {
+  if (reply.status != UP_OK) {
+    s_link_error = true;  // led_tick()이 1초 주기 깜빡임
+    return;
+  }
+  s_link_error = false;
+  if (reply.result == RES_VIOLATION) led_blink(3);
+  else led_blink(1);
+}
+
+// 연결 문제면 1초 주기(500ms 켜짐 / 500ms 꺼짐)로 깜빡, 아니면 꺼 둔다. 블로킹 X
 static void led_tick() {
-  // TODO: s_link_error 또는 !uploader_connected() 이면 1초 주기 깜빡임 (millis 기반, 블로킹 X)
+  if (s_link_error || !uploader_connected()) {
+    uint32_t now = millis();
+    if ((uint32_t)(now - s_led_toggle_ms) >= 500) {
+      s_led_toggle_ms = now;
+      led_set(!s_led_on);
+    }
+  } else if (s_led_on) {
+    led_set(false);
+  }
 }
 
 void setup() {
