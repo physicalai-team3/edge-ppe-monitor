@@ -88,9 +88,11 @@ services:
       SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY:-}
       SUPABASE_BUCKET: ${SUPABASE_BUCKET:-violation-images}
       SAMPLES_DIR: /samples
+      SCHEMAS_DIR: /schemas            # 올리기 전에 violation-row 스키마로 검사
       PYTHONUNBUFFERED: "1"
     volumes:
       - ./shared/samples:/samples:ro
+      - ./shared/schemas:/schemas:ro
 
   # ── 👤 팀원 2 (ESP32 도구) ─────────────────────────────────────
   fw:
