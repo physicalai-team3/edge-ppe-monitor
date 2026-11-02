@@ -13,6 +13,13 @@ pi/gateway/data/
 firmware/build/
 firmware/test/*.out
 
+# sensor_test 스케치용 복사본 (원본은 firmware/ppe_cam, sensor_test/sync.sh 가 복사)
+firmware/sensor_test/person_sensor.cpp
+firmware/sensor_test/person_sensor.h
+firmware/sensor_test/person_result.h
+firmware/sensor_test/camera_pins.h
+firmware/sensor_test/config.h
+
 # Python
 __pycache__/
 *.pyc
