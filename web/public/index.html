@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PPE 관제</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>PPE 관제</h1>
+    <span id="conn" class="badge">연결 중…</span>
+  </header>
+
+  <!-- 오늘 통계: 전체 / 안전모 / 조끼 -->
+  <section id="stats" class="stats">
+    <div><span id="stat-total">0</span><small>오늘 위반</small></div>
+    <div><span id="stat-helmet">0</span><small>안전모 미착용</small></div>
+    <div><span id="stat-vest">0</span><small>조끼 미착용</small></div>
+  </section>
+
+  <!-- (2차) 장치 상태 -->
+  <section id="devices" class="devices"></section>
+
+  <!-- 실시간 위반 피드 (최신이 위) -->
+  <main id="feed" class="feed"></main>
+
+  <template id="card-tpl">
+    <article class="card">
+      <img alt="위반 사진">
+      <div class="meta">
+        <strong class="types"></strong>
+        <span class="device"></span>
+        <time></time>
+      </div>
+    </article>
+  </template>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

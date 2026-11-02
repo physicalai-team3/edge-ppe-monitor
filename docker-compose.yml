@@ -1,0 +1,101 @@
+# edge-ppe-monitor
+#   --profile pi:       gateway(받기·판정·업로드) + detector(YOLOv8 ONNX)  — Raspberry Pi 5 에서
+#   --profile sim:      cam-sim(가짜 ESP32)                                 — 보드 없이 Pi 개발
+#   --profile web:      web(대시보드)                                       — 노트북에서
+#   --profile seed:     cloud-seed(가짜 Pi, 위반 1건 INSERT)                — Pi 없이 웹 개발
+#   --profile firmware: fw(arduino-cli 컴파일·단위 테스트)                  — 노트북에서
+# 각자 자기 서비스 블록만 수정한다. 자세한 내용: docs/02-containers.md
+services:
+  # ── 👤 팀원 3 (Pi) ─────────────────────────────────────────────
+  gateway:
+    build: ./pi/gateway
+    container_name: ppe-gateway
+    profiles: ["pi"]
+    ports:
+      - "${GATEWAY_PORT:-8000}:8000"   # ESP32 가 http://<Pi IP>:8000 으로 접속
+    environment:
+      DETECTOR_URL: http://detector:9000
+      DEVICE_API_KEY: ${DEVICE_API_KEY:-change-me}
+      GATEWAY_ID: ${GATEWAY_ID:-pi-01}
+      VIOLATION_COOLDOWN_S: ${VIOLATION_COOLDOWN_S:-30}
+      JUDGE_UNKNOWN_AS_VIOLATION: ${JUDGE_UNKNOWN_AS_VIOLATION:-true}
+      CLOUD_ENABLED: ${CLOUD_ENABLED:-true}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY:-}   # 쓰기 키: Pi 에만
+      SUPABASE_BUCKET: ${SUPABASE_BUCKET:-violation-images}
+      OUTBOX_DIR: /data/outbox
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./pi/gateway/data:/data        # outbox: 업로드 전 위반을 디스크에 보관
+    depends_on:
+      detector:
+        condition: service_healthy
+    restart: unless-stopped
+
+  detector:
+    build: ./pi/detector
+    container_name: ppe-detector
+    profiles: ["pi"]
+    expose:
+      - "9000"                         # 내부 전용 (호스트에 열지 않음)
+    environment:
+      DETECTOR_MODE: ${DETECTOR_MODE:-onnx}   # onnx | mock
+      MODEL_PATH: /models/${MODEL_FILE:-ppe.onnx}
+      CONF_THRESHOLD: ${CONF_THRESHOLD:-0.4}
+      IOU_THRESHOLD: ${IOU_THRESHOLD:-0.5}
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./pi/detector/models:/models:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9000/healthz')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  cam-sim:
+    build: ./pi/cam-sim
+    container_name: ppe-cam-sim
+    profiles: ["sim"]
+    environment:
+      GATEWAY_URL: ${SIM_GATEWAY_URL:-http://gateway:8000}
+      DEVICE_API_KEY: ${DEVICE_API_KEY:-change-me}
+      DEVICE_ID: ${SIM_DEVICE_ID:-sim-01}
+      INTERVAL_S: ${SIM_INTERVAL_S:-3}
+      SAMPLES_DIR: /samples
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./shared/samples:/samples:ro
+
+  # ── 👤 팀원 4 (클라우드·웹) ────────────────────────────────────
+  web:
+    build: ./web
+    container_name: ppe-web
+    profiles: ["web"]
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    environment:
+      # 브라우저에 그대로 노출되는 값만 (publishable 키). secret 키 금지
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY:-}
+      SUPABASE_BUCKET: ${SUPABASE_BUCKET:-violation-images}
+
+  cloud-seed:
+    build: ./cloud/seed
+    profiles: ["seed"]
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY:-}
+      SUPABASE_BUCKET: ${SUPABASE_BUCKET:-violation-images}
+      SAMPLES_DIR: /samples
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./shared/samples:/samples:ro
+
+  # ── 👤 팀원 2 (ESP32 도구) ─────────────────────────────────────
+  fw:
+    build: ./firmware
+    profiles: ["firmware"]
+    volumes:
+      - ./firmware:/firmware
+    command: ["sh", "build.sh"]        # 테스트: docker compose --profile firmware run --rm fw sh test.sh

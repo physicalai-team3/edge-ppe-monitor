@@ -1,0 +1,22 @@
+# 모델 클래스 이름 → 표준 이름 (docs/03-contracts.md §1)
+# 모델을 바꾸면 이 파일만 고친다. map 에 없는 클래스(Mask, Safety Cone 등)는 버린다.
+
+# 모델의 클래스 순서 (학습 data.yaml 의 names 그대로). ONNX 메타데이터에 names 가 있으면 그걸 우선 사용
+model_classes:
+  - Hardhat
+  - Mask
+  - NO-Hardhat
+  - NO-Mask
+  - NO-Safety Vest
+  - Person
+  - Safety Cone
+  - Safety Vest
+  - machinery
+  - vehicle
+
+map:
+  Person: person
+  Hardhat: helmet
+  NO-Hardhat: no_helmet
+  Safety Vest: vest
+  NO-Safety Vest: no_vest

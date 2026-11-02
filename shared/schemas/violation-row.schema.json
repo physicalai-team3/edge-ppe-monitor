@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "violation-row.schema.json",
+  "title": "Supabase public.violations 1행 = outbox row.json (gateway → Supabase → web), docs/03-contracts.md §6.3",
+  "type": "object",
+  "required": [
+    "id",
+    "captured_at",
+    "device_id",
+    "gateway_id",
+    "person_count",
+    "no_helmet_count",
+    "no_vest_count",
+    "violation_types",
+    "image_path",
+    "persons",
+    "detections"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "DB가 채움. gateway는 보내지 않음"
+    },
+    "captured_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "device_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]{1,32}$"
+    },
+    "gateway_id": {
+      "type": "string"
+    },
+    "frame_seq": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "person_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "no_helmet_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "no_vest_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "violation_types": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "no_helmet",
+          "no_vest"
+        ]
+      },
+      "uniqueItems": true,
+      "description": "항상 no_helmet, no_vest 순서 (docs/03-contracts.md §1.3)",
+      "minItems": 1
+    },
+    "image_path": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]{1,32}/\\d{4}-\\d{2}-\\d{2}/[0-9a-f-]{36}\\.jpg$",
+      "description": "<device_id>/<captured_at UTC 날짜>/<id>.jpg"
+    },
+    "image_w": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "image_h": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "persons": {
+      "type": "array",
+      "description": "x1 오름차순",
+      "items": {
+        "type": "object",
+        "required": [
+          "box",
+          "helmet",
+          "vest"
+        ],
+        "properties": {
+          "box": {
+            "description": "[x1, y1, x2, y2] 원본 이미지 픽셀 정수",
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 4,
+            "maxItems": 4
+          },
+          "helmet": {
+            "type": "boolean"
+          },
+          "vest": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "detections": {
+      "type": "array",
+      "items": {
+        "$ref": "detect-response.schema.json#/$defs/detection"
+      }
+    },
+    "model": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "infer_ms": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    }
+  }
+}

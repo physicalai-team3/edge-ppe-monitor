@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "error.schema.json",
+  "title": "에러 응답 (gateway, detector 공통), docs/03-contracts.md §3.3, §4.2",
+  "type": "object",
+  "required": [
+    "v",
+    "error",
+    "detail"
+  ],
+  "properties": {
+    "v": {
+      "const": 1
+    },
+    "error": {
+      "enum": [
+        "missing_header",
+        "bad_device_id",
+        "invalid_image",
+        "bad_device_key",
+        "image_too_large",
+        "unsupported_media_type",
+        "detector_unavailable",
+        "internal_error",
+        "invalid_heartbeat",
+        "model_not_ready"
+      ]
+    },
+    "detail": {
+      "type": "string",
+      "description": "사람이 읽는 설명. 비어 있어도 됨"
+    }
+  }
+}

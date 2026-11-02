@@ -1,0 +1,25 @@
+/* 👤 팀원 4 */
+:root {
+  --bg: #111418;
+  --panel: #1b2027;
+  --text: #e8eaed;
+  --muted: #9aa0a6;
+  --danger: #e5484d;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }
+header { display: flex; align-items: center; justify-content: space-between; padding: 16px; }
+h1 { margin: 0; font-size: 20px; }
+.badge { font-size: 12px; color: var(--muted); }
+
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 16px; }
+.stats div { background: var(--panel); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; }
+.stats span { font-size: 28px; font-weight: 700; }
+.stats small { color: var(--muted); }
+
+.feed { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; padding: 16px; }
+.card { background: var(--panel); border-radius: 8px; overflow: hidden; border-left: 4px solid var(--danger); }
+.card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; background: #000; }
+.card .meta { padding: 8px 12px; display: flex; flex-direction: column; gap: 2px; }
+.card .device, .card time { color: var(--muted); font-size: 13px; }

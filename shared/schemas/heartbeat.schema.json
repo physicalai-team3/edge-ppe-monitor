@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "heartbeat.schema.json",
+  "title": "POST /api/v1/heartbeat 요청 (ESP32 → gateway), docs/03-contracts.md §3.6",
+  "type": "object",
+  "required": [
+    "v",
+    "device_id",
+    "uptime_s"
+  ],
+  "properties": {
+    "v": {
+      "const": 1
+    },
+    "device_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]{1,32}$"
+    },
+    "fw_version": {
+      "type": "string"
+    },
+    "uptime_s": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "rssi": {
+      "type": "integer"
+    },
+    "free_heap": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "frames_sent": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "부팅 후 200 응답을 받은 전송 수"
+    },
+    "last_error": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "frame-response.schema.json",
+  "title": "POST /api/v1/frames 200 응답 (gateway → ESP32), docs/03-contracts.md §3.2",
+  "type": "object",
+  "required": [
+    "v",
+    "frame_seq",
+    "result",
+    "persons",
+    "violations",
+    "violation_id",
+    "cloud",
+    "infer_ms"
+  ],
+  "properties": {
+    "v": {
+      "const": 1
+    },
+    "frame_seq": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "result": {
+      "enum": [
+        "violation",
+        "compliant",
+        "no_person"
+      ]
+    },
+    "persons": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "violations": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "no_helmet",
+          "no_vest"
+        ]
+      },
+      "uniqueItems": true,
+      "description": "항상 no_helmet, no_vest 순서 (docs/03-contracts.md §1.3)"
+    },
+    "violation_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "cloud": {
+      "enum": [
+        "queued",
+        "duplicate",
+        "disabled",
+        "none"
+      ]
+    },
+    "infer_ms": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "result": {
+            "const": "violation"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "violations": {
+            "minItems": 1
+          },
+          "persons": {
+            "minimum": 1
+          },
+          "cloud": {
+            "enum": [
+              "queued",
+              "duplicate",
+              "disabled"
+            ]
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "violations": {
+            "maxItems": 0
+          },
+          "cloud": {
+            "const": "none"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "result": {
+            "const": "no_person"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "persons": {
+            "const": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "result": {
+            "const": "compliant"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "persons": {
+            "minimum": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "cloud": {
+            "const": "queued"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "violation_id": {
+            "type": "string"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "violation_id": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ]
+}

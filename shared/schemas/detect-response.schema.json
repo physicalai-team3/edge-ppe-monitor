@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "detect-response.schema.json",
+  "title": "POST /v1/detect 200 응답 (detector → gateway), docs/03-contracts.md §4.1",
+  "type": "object",
+  "required": [
+    "v",
+    "model",
+    "infer_ms",
+    "image_w",
+    "image_h",
+    "detections"
+  ],
+  "properties": {
+    "v": {
+      "const": 1
+    },
+    "model": {
+      "type": "string",
+      "description": "모델 파일 이름(확장자 제외) 또는 mock"
+    },
+    "infer_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "image_w": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "원본 JPEG 폭"
+    },
+    "image_h": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "원본 JPEG 높이"
+    },
+    "detections": {
+      "type": "array",
+      "description": "점수 내림차순",
+      "items": {
+        "$ref": "#/$defs/detection"
+      }
+    }
+  },
+  "$defs": {
+    "detection": {
+      "type": "object",
+      "required": [
+        "cls",
+        "score",
+        "box"
+      ],
+      "properties": {
+        "cls": {
+          "enum": [
+            "person",
+            "helmet",
+            "no_helmet",
+            "vest",
+            "no_vest"
+          ]
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "소수 셋째 자리"
+        },
+        "box": {
+          "description": "[x1, y1, x2, y2] 원본 이미지 픽셀 정수",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 4,
+          "maxItems": 4
+        }
+      }
+    },
+    "box": {
+      "description": "[x1, y1, x2, y2] 원본 이미지 픽셀 정수",
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "minItems": 4,
+      "maxItems": 4
+    }
+  }
+}

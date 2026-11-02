@@ -1,0 +1,26 @@
+# 비밀 정보 (Wi-Fi 비밀번호, Supabase 키)
+.env
+firmware/ppe_cam/config.h
+
+# 모델 가중치 (용량 큼 — pi/detector/models/README.md 참고)
+pi/detector/models/*.onnx
+pi/detector/models/*.pt
+
+# Pi 런타임 데이터 (outbox)
+pi/gateway/data/
+
+# 펌웨어 빌드 결과물
+firmware/build/
+firmware/test/*.out
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# 편집기 / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
