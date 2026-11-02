@@ -120,7 +120,7 @@ static void run_tests() {
     check(r.status == PS_OK, "status == PS_OK");
     check(r.person == (r.count > 0), "person == (count > 0)");
     check(r.count > 0 || r.score == 0.0f, "count == 0 이면 score == 0");
-    Serial.printf("  person=%d count=%u score=%.2f infer=%lums (모델 통합 전에는 항상 person=0)\n",
+    Serial.printf("  person=%d count=%u score=%.2f infer=%lums\n",
                   r.person, r.count, r.score, (unsigned long)r.infer_ms);
   }
 

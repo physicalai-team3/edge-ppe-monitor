@@ -20,6 +20,8 @@
 #define PPE_PERSON_THRESHOLD  0.5f                 // 이 점수 미만은 사람으로 치지 않음
 #define PPE_JPEG_QUALITY      12                   // 0~63, 낮을수록 고화질·큰 파일 (VGA 60KB 목표, 512KB 상한)
 #define PPE_SENSOR_LOG        1                    // 1: 프레임마다 시리얼에 결과 출력
+#define PPE_SENSOR_PROFILE    0                    // 1: poll() 단계별 시간(디코드·리사이즈·추론) 출력
+#define PPE_SENSOR_DECODE_DIV 4                    // 검출용 축소 디코드 1/N (4: 검출 안정 3.2fps [기본], 8: 빠르나 검출 약함 6.6fps)
 
 // ── 트리거 (팀원 2) ───────────────────────────────────────
 #define PPE_TRIGGER_FRAMES    2                    // 연속 N프레임 사람 → 촬영
