@@ -10,5 +10,10 @@ class Cooldown:
     def should_upload(self, device_id: str, violations: list[str], now: float | None = None) -> bool:
         """키 (device_id, violations) 가 마지막 업로드 후 seconds 안이면 False.
         True 를 반환할 때만 시각을 기록한다 (duplicate 는 타이머를 다시 시작하지 않음)."""
-        # TODO: 구현 (tests/test_dedup.py)
+        now = time.monotonic() if now is None else now
+        key = (device_id, tuple(violations))
+        last = self._last_upload.get(key)
+        if last is not None and now - last < self.seconds:
+            return False
+        self._last_upload[key] = now
         return True
