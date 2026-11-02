@@ -1,0 +1,2 @@
+# dev-config.py / 40-write-config.sh 가 .env 로 만드는 파일
+public/config.js
