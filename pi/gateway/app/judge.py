@@ -43,16 +43,18 @@ def _in_region(person: list[int], region: tuple[float, float], point: tuple[floa
 
 def _wearing(person: list[int], region: tuple[float, float], gear: list[dict],
              ok_cls: str, bad_cls: str, unknown_as_violation: bool) -> bool:
-    """영역 안에 bad_cls 가 있으면 False → ok_cls 가 있으면 True → 둘 다 없으면 판단 불가 (5.2)."""
-    found = {d["cls"] for d in gear if _in_region(person, region, _center(d["box"]))}
-    if bad_cls in found:
-        return False
-    if ok_cls in found:
-        return True
-    return not unknown_as_violation
+    """영역 안의 ok_cls / bad_cls 중 점수가 가장 높은 박스를 따른다 (같으면 bad_cls).
+    둘 다 없으면 판단 불가 → unknown_as_violation (5.2)."""
+    best = {ok_cls: 0.0, bad_cls: 0.0}
+    for d in gear:
+        if d["cls"] in best and _in_region(person, region, _center(d["box"])):
+            best[d["cls"]] = max(best[d["cls"]], d["score"])
+    if best[ok_cls] == 0 and best[bad_cls] == 0:
+        return not unknown_as_violation
+    return best[ok_cls] > best[bad_cls]
 
 
-def judge(detections: list[dict], unknown_as_violation: bool = True) -> Judgement:
+def judge(detections: list[dict], unknown_as_violation: bool = False) -> Judgement:
     """detector 의 detections → 사람별 착용 여부 + 전체 결과."""
     people = [d["box"] for d in detections if d["cls"] == "person" and d["score"] >= PERSON_MIN_SCORE]
     gear = [d for d in detections if d["cls"] != "person"]

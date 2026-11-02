@@ -33,17 +33,23 @@ def test_no_helmet():
     assert j.no_helmet_count == 1 and j.no_vest_count == 0
 
 
-def test_no_helmet_wins_over_helmet():
+def test_tie_goes_to_no_helmet():
     j = judge([PERSON, HELMET, NO_HELMET, VEST])
     assert j.violations == ["no_helmet"]
 
 
-def test_unknown_is_violation_by_default():
-    assert judge([PERSON, HELMET]).violations == ["no_vest"]
+def test_higher_score_wins():
+    j = judge([PERSON, HELMET, {**NO_HELMET, "score": 0.45}, VEST, {**NO_VEST, "score": 0.9}])
+    assert j.persons[0].helmet is True and j.persons[0].vest is False
+    assert j.violations == ["no_vest"]
 
 
-def test_unknown_is_ok_when_disabled():
-    assert judge([PERSON, HELMET], unknown_as_violation=False).result == "compliant"
+def test_unknown_is_ok_by_default():
+    assert judge([PERSON, HELMET]).result == "compliant"
+
+
+def test_unknown_is_violation_when_enabled():
+    assert judge([PERSON, HELMET], unknown_as_violation=True).violations == ["no_vest"]
 
 
 def test_violation_order_is_fixed():
@@ -53,7 +59,7 @@ def test_violation_order_is_fixed():
 
 def test_gear_outside_any_person_is_ignored():
     far_helmet = {"cls": "helmet", "score": 0.8, "box": [500, 10, 560, 60]}
-    j = judge([PERSON, far_helmet, VEST])
+    j = judge([PERSON, far_helmet, VEST], unknown_as_violation=True)   # 무시됐으면 판단 불가 → 위반
     assert j.violations == ["no_helmet"]
 
 

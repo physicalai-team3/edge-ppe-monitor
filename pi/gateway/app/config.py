@@ -14,7 +14,7 @@ class Settings:
     device_api_key: str = os.getenv("DEVICE_API_KEY", "change-me")
     gateway_id: str = os.getenv("GATEWAY_ID", "pi-01")
     violation_cooldown_s: int = int(os.getenv("VIOLATION_COOLDOWN_S", "30"))
-    unknown_as_violation: bool = _bool("JUDGE_UNKNOWN_AS_VIOLATION", True)
+    unknown_as_violation: bool = _bool("JUDGE_UNKNOWN_AS_VIOLATION", False)
     cloud_enabled: bool = _bool("CLOUD_ENABLED", True)
     supabase_url: str = os.getenv("SUPABASE_URL", "")
     supabase_secret_key: str = os.getenv("SUPABASE_SECRET_KEY", "")

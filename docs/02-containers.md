@@ -82,7 +82,7 @@ docker compose --profile firmware run --rm fw sh test.sh      # trigger 단위 �
 | `GATEWAY_PORT` | gateway | `8000` | 호스트에 여는 포트 |
 | `GATEWAY_ID` | gateway | `pi-01` | |
 | `VIOLATION_COOLDOWN_S` | gateway | `30` | 같은 위반 반복 업로드 방지 ([03 §5.4](03-contracts.md#54-쿨다운-중복-업로드-방지)) |
-| `JUDGE_UNKNOWN_AS_VIOLATION` | gateway | `true` | 보호구가 안 보이면(판단 불가) 위반으로 침 ([03 §5.2](03-contracts.md#52-사람별-착용-여부)) |
+| `JUDGE_UNKNOWN_AS_VIOLATION` | gateway | `false` | `true`면 보호구가 안 보일 때(판단 불가)도 위반으로 침 ([03 §5.2](03-contracts.md#52-사람별-착용-여부)) |
 | `CLOUD_ENABLED` | gateway | `true` | `false`면 판정만 하고 업로드 안 함 |
 | `DETECTOR_MODE` | detector | `onnx` | `onnx` \| `mock` |
 | `MODEL_FILE` | detector | `ppe.onnx` | `pi/detector/models/` 안의 파일 이름 |

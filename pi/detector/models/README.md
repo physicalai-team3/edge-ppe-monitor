@@ -56,4 +56,7 @@ v30은 25 클래스(차량·장비 포함)지만, `labels.yaml`의 `map`에 있�
 
 | 모델 | 데이터셋 | mAP50 (all / NO-Hardhat / NO-Safety Vest) | 입력 | Pi 5 추론 시간 | 비고 |
 |---|---|---|---|---|---|
-| yolov8n | Construction Site Safety v30, 50 epoch | 0.577 / 0.583 / 0.592 | 640 | ms | Colab T4. 우리가 쓰는 5개: Person 0.777, Hardhat 0.714, Safety Vest 0.741 |
+| **yolov8n (사용 중)** | Construction Site Safety v30, 50 epoch | 0.577 / 0.583 / 0.592 | 640 | 약 174ms (bus.jpg, 2~5번째 평균) | Colab T4. 5개 클래스 평균 0.681. 테스트 사진 25장 19/25, 노트북 CPU 57ms |
+| yolov8s | 같음, 80 epoch (22에서 최고 → 42에서 조기 종료) | 0.586 / 0.598 / 0.637 | 640 | — | 5개 평균 0.687. 정밀도↑ 재현율↓. 테스트 사진 16/25, 노트북 CPU 160ms → **채택 안 함** |
+
+테스트 사진 25장: 위키미디어 공용 사진(착용 9장, 위반 16장), 판정 규칙 D안(03 §5.2), `CONF_THRESHOLD` 0.2~0.4를 바꿔 봐도 n 0.4가 가장 좋았다.
