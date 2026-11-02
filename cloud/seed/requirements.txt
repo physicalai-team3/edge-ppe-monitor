@@ -1,0 +1,4 @@
+supabase==2.33.0
+pillow==11.0.0
+jsonschema==4.23.0
+pytest==8.3.4
