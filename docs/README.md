@@ -10,6 +10,7 @@
 | [02-containers.md](02-containers.md) | 컨테이너 구성, 실행 방법, 포트·환경 변수, 네트워크 체크리스트 | 전원 |
 | [03-contracts.md](03-contracts.md) | **계약**: 구간별로 주고받는 데이터 (헤더·HTTP·DB·Storage) | 전원 (**공동 소유**) |
 | [04-team-plan.md](04-team-plan.md) | 4인 역할 분담, 오늘 타임라인, Git 규칙, 완료 기준 | 전원 |
+| [05-model-comparison.md](05-model-comparison.md) | PPE 모델 비교 (YOLOv8n vs s), 테스트 사진 판정 결과, Pi 추론 속도 | 팀원 3, 발표 준비 |
 
 처음이라면 **01 → 03 → 04** 순서로 읽는다. 03은 오전 첫 30분 안에 다 같이 확정(동결)한다.
 

@@ -2,17 +2,33 @@
 # 모델을 바꾸면 이 파일만 고친다. map 에 없는 클래스(Mask, Safety Cone 등)는 버린다.
 
 # 모델의 클래스 순서 (학습 data.yaml 의 names 그대로). ONNX 메타데이터에 names 가 있으면 그걸 우선 사용
+# Roboflow "Construction Site Safety" v30 (25 클래스)
 model_classes:
+  - Excavator
+  - Gloves
   - Hardhat
+  - Ladder
   - Mask
   - NO-Hardhat
   - NO-Mask
   - NO-Safety Vest
   - Person
+  - SUV
   - Safety Cone
   - Safety Vest
+  - bus
+  - dump truck
+  - fire hydrant
   - machinery
+  - mini-van
+  - sedan
+  - semi
+  - trailer
+  - truck and trailer
+  - truck
+  - van
   - vehicle
+  - wheel loader
 
 map:
   Person: person

@@ -29,11 +29,55 @@ class Judgement:
         return sum(not p.vest for p in self.persons)
 
 
-def judge(detections: list[dict], unknown_as_violation: bool = True) -> Judgement:
+def _center(box: list[int]) -> tuple[float, float]:
+    return (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
+
+
+def _in_region(person: list[int], region: tuple[float, float], point: tuple[float, float]) -> bool:
+    """point 가 사람 박스 폭 전체 × 높이 비율 region 안에 있나 (경계 포함)."""
+    x1, y1, x2, y2 = person
+    h = y2 - y1
+    x, y = point
+    return x1 <= x <= x2 and y1 + region[0] * h <= y <= y1 + region[1] * h
+
+
+def _wearing(person: list[int], region: tuple[float, float], gear: list[dict],
+             ok_cls: str, bad_cls: str, unknown_as_violation: bool) -> bool:
+    """영역 안의 ok_cls / bad_cls 중 점수가 가장 높은 박스를 따른다 (같으면 bad_cls).
+    둘 다 없으면 판단 불가 → unknown_as_violation (5.2)."""
+    best = {ok_cls: 0.0, bad_cls: 0.0}
+    for d in gear:
+        if d["cls"] in best and _in_region(person, region, _center(d["box"])):
+            best[d["cls"]] = max(best[d["cls"]], d["score"])
+    if best[ok_cls] == 0 and best[bad_cls] == 0:
+        return not unknown_as_violation
+    return best[ok_cls] > best[bad_cls]
+
+
+def judge(detections: list[dict], unknown_as_violation: bool = False) -> Judgement:
     """detector 의 detections → 사람별 착용 여부 + 전체 결과."""
-    # TODO: 03 §5 규칙 구현
-    #   5.1 person(score>=0.5) 찾기. 0명이면 no_helmet/no_vest 박스 각각을 사람 1명으로
-    #       (잡힌 항목만 ❌, 나머지 ✅)
-    #   5.2 보호구 박스 중심점이 머리/몸통 영역 안이면 그 사람의 것. no_* 우선, 없으면 unknown_as_violation
-    #   5.3 result, violations(VIOLATION_ORDER), persons(x1 오름차순)
-    return Judgement(result="no_person")
+    people = [d["box"] for d in detections if d["cls"] == "person" and d["score"] >= PERSON_MIN_SCORE]
+    gear = [d for d in detections if d["cls"] != "person"]
+
+    if people:
+        persons = [PersonVerdict(box=box,
+                                 helmet=_wearing(box, HEAD_REGION, gear, "helmet", "no_helmet", unknown_as_violation),
+                                 vest=_wearing(box, TORSO_REGION, gear, "vest", "no_vest", unknown_as_violation))
+                   for box in people]
+    else:
+        # 5.1-3 모델이 사람을 놓친 경우: no_* 박스 하나 = 사람 1명, 잡힌 항목만 ❌
+        persons = [PersonVerdict(box=d["box"], helmet=d["cls"] != "no_helmet", vest=d["cls"] != "no_vest")
+                   for d in gear if d["cls"] in VIOLATION_ORDER]
+
+    if not persons:
+        return Judgement(result="no_person")
+
+    persons.sort(key=lambda p: p.box[0])
+    found = set()
+    for p in persons:
+        if not p.helmet:
+            found.add("no_helmet")
+        if not p.vest:
+            found.add("no_vest")
+    violations = [v for v in VIOLATION_ORDER if v in found]
+    return Judgement(result="violation" if violations else "compliant", persons=persons, violations=violations)
