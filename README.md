@@ -42,7 +42,66 @@ XIAO ESP32S3 Sense가 사람을 감지해 사진을 찍고, Raspberry Pi 5가 �
 
 ESP32는 작은 모델만 돌릴 수 있어 "사람 유무"까지만, 안전모·조끼처럼 작은 물체 판별은 연산이 넉넉한 Pi가 맡는다.
 
-## 2. 컨테이너 분리
+## 2. 팀원별 구현 내용
+
+> 각자 **자기 폴더/파일만** 수정한다. 경계에서 주고받는 데이터는 [docs/03-contracts.md](docs/03-contracts.md)가 기준이고, 시간표·완료 기준은 [docs/04-team-plan.md](docs/04-team-plan.md)에 있다.
+
+| | 👤 팀원 1 — 눈 | 👤 팀원 2 — 손 | 👤 팀원 3 — 두뇌 | 👤 팀원 4 — 관제실 |
+|---|---|---|---|---|
+| 장비 | ESP32 (XIAO ESP32S3 Sense) | ESP32 (XIAO ESP32S3 Sense) | Raspberry Pi 5 | 노트북 + Supabase |
+| 브랜치 | `feat/esp32-vision` | `feat/esp32-link` | `feat/pi-gateway` | `feat/cloud-web` |
+| 내 폴더 | `firmware/ppe_cam/person_sensor.cpp`, `camera_pins.h`, `firmware/libraries/` | `firmware/ppe_cam/`의 나머지, `firmware/test/`, `firmware/Dockerfile·build.sh·test.sh` | `pi/` | `cloud/`, `web/` |
+| 넘겨주는 것 | `person_result_t`, VGA JPEG | 사진 + 헤더 (HTTP POST) | 판정 JSON, 위반 사진·DB 행 | 테이블·키, 대시보드 |
+
+### 👤 팀원 1 — 눈 (ESP32: 카메라 + 사람 검출)
+
+| 구현할 것 | 파일 | 설명 |
+|---|---|---|
+| 카메라 초기화 | `person_sensor.cpp` `person_sensor_begin()` | XIAO 핀(`camera_pins.h`), PSRAM 확인. 실패하면 `false` (재부팅 루프 금지) |
+| 사람 검출 모델 | `firmware/libraries/` | Edge Impulse 사람 검출 FOMO → Arduino 라이브러리로 내보내 커밋 |
+| 프레임마다 검출 | `person_sensor_poll()` | 96×96으로 줄여 추론 → `person`, `count`, `score`, `infer_ms` 채우기 (5fps 내외) |
+| 전송용 촬영 | `person_sensor_capture_jpeg()` / `release()` | VGA 640×480 JPEG, 60KB 목표, 버퍼 반납 |
+| 측정 | — | 거리(1·2·3m)별 검출 여부, 추론 시간, 오검출 기록 |
+
+### 👤 팀원 2 — 손 (ESP32: 언제 보낼지 + 전송)
+
+| 구현할 것 | 파일 | 설명 |
+|---|---|---|
+| 트리거 상태 머신 | `trigger.cpp` | 연속 2프레임 사람 → 촬영, 계속 있으면 5초마다 재촬영, 2초 안 보이면 대기. `test.sh`로 PC 테스트 |
+| Wi-Fi·NTP | `frame_uploader.cpp` `uploader_begin()`, `uploader_tick()` | 2.4GHz 접속·재접속, UTC 시간 동기화 |
+| 사진 전송 | `uploader_send_frame()` | `POST /api/v1/frames` (body = JPEG, 메타는 `X-*` 헤더), 응답 JSON 파싱, 실패 시 1회 재시도 |
+| LED 표시 | `ppe_cam.ino` `led_signal()`, `led_tick()` | 위반 3번 깜빡, 정상 1번, 연결 문제 1초 주기 |
+| 조립 | `ppe_cam.ino` | 센서 → 트리거 → 촬영 → 전송 → LED 흐름 |
+| 가짜 센서 | `person_sensor_stub.cpp` | BOOT 버튼 = 사람, 테스트 JPEG 전송 (팀원 1 모델 없이 개발) |
+| (2차) 하트비트 | `uploader_tick()` | 30초마다 `POST /api/v1/heartbeat` |
+
+### 👤 팀원 3 — 두뇌 (Raspberry Pi: 판별 + 업로드)
+
+| 구현할 것 | 파일 | 설명 |
+|---|---|---|
+| 수신 API | `pi/gateway/app/main.py` | `POST /api/v1/frames` 검증(키·헤더·크기·JPEG), 에러 코드 표대로 응답, `/healthz` |
+| PPE 추론 | `pi/detector/app/model.py` | YOLOv8n ONNX: letterbox → 추론 → NMS → 원본 좌표 → 표준 클래스 5개로 변환 |
+| 모델 준비 | `pi/detector/models/`, `labels.yaml` | 학습된 PPE 가중치 → ONNX export, 클래스 이름 매핑 |
+| detector 호출 | `pi/gateway/app/detector_client.py` | 4초 타임아웃, 실패 시 503 |
+| 판정 규칙 | `pi/gateway/app/judge.py` | 사람마다 머리 영역 안전모, 몸통 영역 조끼 확인 → `violation` / `compliant` / `no_person` |
+| 중복 방지 | `pi/gateway/app/dedup.py` | 같은 장치·같은 위반은 30초에 1번만 업로드 |
+| 박스 그리기 | `pi/gateway/app/annotate.py` | 위반자 빨강, 착용자 초록 |
+| outbox·업로드 | `pi/gateway/app/outbox.py`, `cloud.py` | 디스크에 먼저 저장 → Storage 사진 → DB 행 upsert, 실패 시 10초마다 재시도 |
+| 가짜 ESP32 | `pi/cam-sim/sim.py` | 샘플 사진을 주기적으로 전송 (보드 없이 개발) |
+| (2차) 장치 상태 | `main.py`, `cloud.py` | 하트비트 → `devices` 테이블 upsert |
+
+### 👤 팀원 4 — 관제실 (Supabase + 웹 대시보드)
+
+| 구현할 것 | 파일 | 설명 |
+|---|---|---|
+| Supabase 설정 | `cloud/supabase/migrations/` | 프로젝트 생성, SQL 실행(테이블·RLS·Realtime·Storage), **키 전달** (secret은 팀원 3에게만 DM) |
+| 가짜 Pi | `cloud/seed/seed.py` | 위반 1건 업로드 (Pi 없이 웹 개발) |
+| 위반 피드 | `web/public/app.js` | 최근 50건 조회 + Realtime INSERT 구독, `id`로 중복 제거, 서명 URL로 사진 표시 |
+| 오늘 통계 | `app.js` | 한국 시간 0시 이후 전체·안전모·조끼 위반 수 (별도 조회) |
+| 화면 | `web/public/index.html`, `style.css` | 카드(사진·시각·장치·위반 종류), 연결 상태, 새 위반 알림(토스트/소리) |
+| (2차) 장치 상태 | `app.js` | `devices` 구독, 90초 넘게 하트비트 없으면 오프라인 표시 |
+
+## 3. 컨테이너 분리
 
 | 컨테이너 | 비유 | 하는 일 | 어디서 | 주인 |
 |---|---|---|---|---|
@@ -70,7 +129,7 @@ ESP32 보드는 컨테이너가 아니다. 보드 안에서는 **파일**로 일
    | Pi | `cloud-seed` | 팀원 4가 Pi 없이 웹 개발 |
    | Supabase | `CLOUD_ENABLED=false` | 팀원 3이 클라우드 없이 판정 개발 |
 
-## 3. 폴더 설계
+## 4. 폴더 설계
 
 **최상위 폴더 = 주인.** 공동 소유는 `docs/03-contracts.md`, `shared/`, 계약 파일뿐이다.
 
@@ -98,7 +157,7 @@ edge-ppe-monitor/
 - **계약이 먼저, 구현은 나중.** 구간마다 주고받는 데이터를 [03-contracts.md](docs/03-contracts.md)에 먼저 정하고, `shared/schemas/`(JSON), 헤더(C), SQL로 고정했다.
 - **비밀은 폴더 밖.** Wi-Fi 비밀번호(`config.h`), Supabase 키(`.env`), 모델 가중치(`*.onnx`)는 `.gitignore`. 예시 파일(`*.example*`)만 커밋한다.
 
-## 4. 주고받는 데이터 (요약)
+## 5. 주고받는 데이터 (요약)
 
 | 구간 | 방식 | 내용 |
 |---|---|---|
@@ -111,7 +170,7 @@ edge-ppe-monitor/
 
 자세한 필드: [docs/03-contracts.md](docs/03-contracts.md)
 
-## 5. 빠른 시작
+## 6. 빠른 시작
 
 ```bash
 cp .env.example .env                                    # 값 채우기
